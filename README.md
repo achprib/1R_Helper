@@ -1,6 +1,7 @@
 # 1R Helper
 
 这是一个基于Vue.js + Flask的AI问答助手，使用Google Gemini API提供回答功能。
+在.env中设置API及代理
 
 ## 功能特点
 
