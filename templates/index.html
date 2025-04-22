@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1R Helper</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .chat-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background-color: #e1f5fe;
+            margin-left: 20px;
+            border-left: 3px solid #03a9f4;
+        }
+        .ai-message {
+            background-color: #f1f8e9;
+            margin-right: 20px;
+            border-left: 3px solid #8bc34a;
+        }
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+        #question-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .loading {
+            text-align: center;
+            margin: 10px 0;
+            display: none;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>1R Helper</h1>
+    
+    <div class="chat-container">
+        <div class="chat-messages" id="chat-messages">
+            <div class="message ai-message">
+                您好！我是基于DeepSeek API的AI助手。请输入您的问题，我会尽力回答。
+            </div>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>正在思考中...</p>
+        </div>
+        
+        <div class="input-container">
+            <input type="text" id="question-input" placeholder="请输入您的问题..." autofocus>
+            <button id="send-button">发送</button>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatMessages = document.getElementById('chat-messages');
+            const questionInput = document.getElementById('question-input');
+            const sendButton = document.getElementById('send-button');
+            const loadingIndicator = document.getElementById('loading');
+            
+            // 处理发送问题
+            function sendQuestion() {
+                const question = questionInput.value.trim();
+                if (!question) return;
+                
+                // 显示用户问题
+                appendMessage(question, 'user');
+                questionInput.value = '';
+                
+                // 显示加载指示器
+                loadingIndicator.style.display = 'block';
+                
+                // 发送请求到后端
+                fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: question }),
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应不正常');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // 隐藏加载指示器
+                    loadingIndicator.style.display = 'none';
+                    
+                    // 显示AI回答
+                    if (data.error) {
+                        appendMessage('错误: ' + data.error, 'ai');
+                    } else {
+                        appendMessage(data.answer, 'ai');
+                    }
+                })
+                .catch(error => {
+                    // 隐藏加载指示器
+                    loadingIndicator.style.display = 'none';
+                    
+                    // 显示错误信息
+                    appendMessage('发生错误: ' + error.message, 'ai');
+                    console.error('Error:', error);
+                });
+            }
+            
+            // 添加消息到聊天窗口
+            function appendMessage(content, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message');
+                messageDiv.classList.add(sender + '-message');
+                messageDiv.textContent = content;
+                
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            // 按钮点击事件
+            sendButton.addEventListener('click', sendQuestion);
+            
+            // 按回车键发送
+            questionInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendQuestion();
+                }
+            });
+        });
+    </script>
+</body>
+</html> 
